@@ -12,34 +12,32 @@ import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import org.json.JSONArray
-import org.json.JSONObject
-import java.io.File
-import java.io.FileWriter
 
 class AddPromptActivity : AppCompatActivity() {
-
+    private lateinit var newsContainer: LinearLayout
     private lateinit var stockContainer: LinearLayout
     private var lastAddedViewId: Int = View.NO_ID
-    private var stockTextList = mutableListOf<EditText>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_prompt)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-
-        stockContainer = findViewById<LinearLayout>(R.id.stock_container)
+        newsContainer = findViewById<LinearLayout>(R.id.newsContainer)
+        stockContainer = findViewById<LinearLayout>(R.id.stockContainer)
         val addStockButton = findViewById<Button>(R.id.addStock)
+        val addNewsButton = findViewById<Button>(R.id.addNewsButton)
 
         val logButton = findViewById<Button>(R.id.logButton)
 
         logButton.setOnClickListener {
             saveToJson()
         }
-        addNewStockRow()
         addStockButton.setOnClickListener(){
             addNewStockRow()
+        }
+        addNewsButton.setOnClickListener(){
+            addNewNewsRow()
         }
     }
 
@@ -76,64 +74,72 @@ class AddPromptActivity : AppCompatActivity() {
         stockContainer.addView(newRow)
         Log.d("AddPromptActivity", "AddedRow: $newRow")
     }
-    private fun getStockEditTexts(): MutableList<EditText> {
-        val stockEditTexts = mutableListOf<EditText>()
+    private fun getStocksStrings(): List<String> {
+        val stockEditTexts = mutableListOf<String>()
 
         for (i in 0 until stockContainer.childCount) {
             val child = stockContainer.getChildAt(i)
             if (child is EditText) {
-                stockEditTexts.add(child)
+                stockEditTexts.add(child.text.toString())
             }
         }
 
         return stockEditTexts
     }
 
+    private fun getNewsStrings(): List<String> {
+        val newsEditTexts = mutableListOf<String>()
+
+        for (i in 0 until newsContainer.childCount) {
+            val child = newsContainer.getChildAt(i)
+            if (child is EditText) {
+                newsEditTexts.add(child.text.toString())
+            }
+        }
+        return newsEditTexts
+    }
+
+    private fun addNewNewsRow(){
+        val newRow = EditText(this).apply {
+            val heightInPixels = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 64f, resources.displayMetrics).toInt()
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                heightInPixels
+            ).apply {
+                val marginInPixels = TypedValue.applyDimension(
+                    TypedValue.COMPLEX_UNIT_DIP, 4f, resources.displayMetrics
+                ).toInt()
+                setMargins(0,marginInPixels,0,0)
+            }
+            hint = "Enter News"
+            setEms(10)
+            background = ContextCompat.getDrawable(context,R.drawable.roundstyle)
+            backgroundTintList = ContextCompat.getColorStateList(context, R.color.element)
+            setTextColor(ContextCompat.getColor(context, R.color.text_color))
+            setHintTextColor(ContextCompat.getColor(context, R.color.gray_hint))
+        }
+        newsContainer.addView(newRow)
+        Log.d("AddPromptActivity", "AddedRow: $newRow")
+    }
+
     private fun saveToJson(){
-        val editName = findViewById<EditText>(R.id.editName)
-        val editLocation = findViewById<EditText>(R.id.editLocation)
-        val editNews = findViewById<EditText>(R.id.editNews)
-        stockTextList = getStockEditTexts()
 
-
-        val promptObject = JSONObject()
-        promptObject.put("name", editName.text.toString())
-        promptObject.put("location", editLocation.text.toString())
-
-        val stocksArray = JSONArray()
-        for(editText in stockTextList) {
-            val stockTicker = editText.text.toString().trim()
-            if(stockTicker.isNotEmpty()){
-                stocksArray.put(stockTicker)
-            }
-        }
-        promptObject.put("stocks", stocksArray)
-
-        val newsCategoriesArray = JSONArray()
-        editNews.text.toString().split(",").forEach { category ->
-            val trimmedCategory = category.trim()
-            if (trimmedCategory.isNotEmpty()) {
-                newsCategoriesArray.put(trimmedCategory)
-            }
-        }
-        promptObject.put("news_categories", newsCategoriesArray)
-
-        val promptsArray = JSONArray()
-        promptsArray.put(promptObject)
-
-        val jsonObject = JSONObject()
-        jsonObject.put("prompts", promptsArray)
-
+        val prompt: Prompt = Prompt(
+            name = findViewById<EditText>(R.id.editName).text.toString(),
+            location = findViewById<EditText>(R.id.editLocation).text.toString(),
+            stocks = getStocksStrings(),
+            news = getNewsStrings(),
+            rhetoric = findViewById<EditText>(R.id.editRhetoric).text.toString()
+        )
         try {
-            val file = File(getExternalFilesDir(null), "prompts.json")
-            FileWriter(file).use {writer ->
-                writer.write(jsonObject.toString(2))
-            }
+            Utils.appendPromptToJson(this,prompt)
             Toast.makeText(this, "Prompt saved!", Toast.LENGTH_LONG).show()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(this, "Error saving prompt: ${e.message}", Toast.LENGTH_LONG).show()
-
+        } catch (e: Exception){
+            Toast.makeText(this,
+                "Error saving prompt: ${e.message}",
+                android.widget.Toast.LENGTH_LONG).show()
         }
+
+
     }
 }
