@@ -2,15 +2,10 @@ package com.example.aiassistant
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.TextView
-import android.widget.Toast
 import com.example.aiassistant.databinding.ActivityMainBinding
-import org.json.JSONObject
-import java.io.File
 
 class MainActivity : AppCompatActivity() {
 
@@ -25,10 +20,6 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, AddPromptActivity::class.java)
             startActivity(intent)
         }
-        displayPrompts()
-
-        val apiKey = BuildConfig.OPENAI_API_KEY
-
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -47,9 +38,5 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun displayPrompts(){
-        val text = Utils.getPrompts(this) ?: "Error loading prompts"
-        val promptsTextView: TextView = findViewById<TextView>(R.id.promptsTextView)
-        promptsTextView.text = text
-    }
+
 }

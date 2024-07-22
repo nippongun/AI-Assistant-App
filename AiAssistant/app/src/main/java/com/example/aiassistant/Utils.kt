@@ -93,6 +93,37 @@ class Utils {
 
             }
         }
+        fun deserializePrompts(context: Context): List<Prompt> {
+            val file = File(context.getExternalFilesDir(null), "prompts.json")
+            if (!file.exists()) {
+                return emptyList()
+            }
+
+            val jsonString = file.readText()
+            val jsonObject = JSONObject(jsonString)
+            val promptsArray = jsonObject.getJSONArray("prompts")
+
+            val prompts = mutableListOf<Prompt>()
+
+            for (i in 0 until promptsArray.length()) {
+                val promptObject = promptsArray.getJSONObject(i)
+
+                val name = promptObject.getString("name")
+                val location = promptObject.getString("location")
+
+                val stocksArray = promptObject.getJSONArray("stocks")
+                val stocks = List(stocksArray.length()) { stocksArray.getString(it) }
+
+                val newsArray = promptObject.getJSONArray("news")
+                val news = List(newsArray.length()) { newsArray.getString(it) }
+
+                val rhetoric = promptObject.getString("rhetoric")
+
+                prompts.add(Prompt(name, location, stocks, news, rhetoric))
+            }
+
+            return prompts
+        }
         fun parsePrompts(jsonString: String) : PromptData {
             val jsonObject = JSONObject(jsonString)
             val promptsArray = jsonObject.getJSONArray("prompts")
@@ -154,7 +185,7 @@ class Utils {
                 e.printStackTrace()
             }
         }
-        fun removePromptFromJson(context: Context, indexToRemove: Int) {
+        fun removePromptFromJsonByIndex(context: Context, indexToRemove: Int) {
             val file = File(context.getExternalFilesDir(null), "prompts.json")
             try {
                 val jsonString = file.readText()
@@ -179,6 +210,18 @@ class Utils {
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+
+        fun generatePrompt(prompt: Prompt): String {
+            val promptBuilder = StringBuilder()
+
+            promptBuilder.append("Generate daily prompt for ${prompt.name} located in ${prompt.location}. Include:\n")
+            promptBuilder.append("1. Weather forecast for ${prompt.location}\n")
+            promptBuilder.append("2. Top news headlines in categories: ${prompt.news.joinToString(",")}\n")
+            promptBuilder.append("3. Stock prices for ${prompt.stocks.joinToString(",")}\n")
+            promptBuilder.append("Provide a concise summary for each section.")
+
+            return promptBuilder.toString()
         }
 
         private fun parseJsonArray(jsonArray: JSONArray): List<String> {
