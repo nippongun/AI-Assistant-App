@@ -26,6 +26,9 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }
         displayPrompts()
+
+        val apiKey = BuildConfig.OPENAI_API_KEY
+
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
