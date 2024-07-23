@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Button
 import com.example.aiassistant.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -18,6 +19,10 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         binding.fab.setOnClickListener { view ->
             val intent = Intent(this, AddPromptActivity::class.java)
+            startActivity(intent)
+        }
+        findViewById<Button>(R.id.testButton).setOnClickListener {
+            val intent = Intent(this, TestActivity::class.java)
             startActivity(intent)
         }
     }

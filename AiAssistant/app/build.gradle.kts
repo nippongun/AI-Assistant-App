@@ -69,6 +69,7 @@ android {
 dependencies {
 
     implementation("com.aallam.openai:openai-client:3.8.2")
+    implementation("io.ktor:ktor-client-okhttp:2.3.4")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

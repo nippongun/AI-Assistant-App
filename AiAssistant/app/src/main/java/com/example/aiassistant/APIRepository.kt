@@ -9,13 +9,15 @@ import com.aallam.openai.api.chat.ChatRole
 import com.aallam.openai.api.http.Timeout
 import com.aallam.openai.api.model.ModelId
 import com.aallam.openai.client.OpenAI
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.time.Duration.Companion.seconds
 
 class APIRepository {
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
     suspend fun fetchBriefing(context: Context) : String {
-        return withContext(Dispatchers.IO){
+        return withContext(dispatcher){
             val apiKey = BuildConfig.OPENAI_API_KEY
             val projectKey = BuildConfig.PROJECT_KEY
             val organizationKey = BuildConfig.ORGANIZATION_KEY

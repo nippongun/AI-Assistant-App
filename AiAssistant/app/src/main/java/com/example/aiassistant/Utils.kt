@@ -236,7 +236,7 @@ class Utils {
                 put("name", prompt.name)
                 put("location", prompt.location)
                 put("stocks", JSONArray(prompt.stocks))
-                put("news_categories", JSONArray(prompt.news))
+                put("news", JSONArray(prompt.news))
                 put("rhetoric", prompt.rhetoric)
             }
         }
