@@ -1,13 +1,15 @@
-package com.example.aiassistant
+package com.example.aiassistant.domain.repository
 
 import android.content.Context
 import android.util.Log
+import com.example.aiassistant.domain.model.Prompt
+import com.example.aiassistant.domain.model.PromptData
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.io.FileWriter
 
-class Utils {
+class JSONRepository {
     companion object {
         fun getPrompts(context: Context): String? {
             try {
@@ -220,7 +222,7 @@ class Utils {
             promptBuilder.append("2. Top news headlines in categories: ${prompt.news.joinToString(",")}\n")
             promptBuilder.append("3. Stock prices for ${prompt.stocks.joinToString(",")}\n")
             promptBuilder.append("Provide a concise summary for each section.")
-
+            promptBuilder.append("Search the internet for all categories. Respond with plain text only. No formatting.")
             return promptBuilder.toString()
         }
 

@@ -12,6 +12,8 @@ import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.example.aiassistant.domain.model.Prompt
+import com.example.aiassistant.domain.repository.JSONRepository
 
 class AddPromptActivity : AppCompatActivity() {
     private lateinit var newsContainer: LinearLayout
@@ -132,7 +134,7 @@ class AddPromptActivity : AppCompatActivity() {
             rhetoric = findViewById<EditText>(R.id.editRhetoric).text.toString()
         )
         try {
-            Utils.appendPromptToJson(this,prompt)
+            JSONRepository.appendPromptToJson(this,prompt)
             Toast.makeText(this, "Prompt saved!", Toast.LENGTH_LONG).show()
         } catch (e: Exception){
             Toast.makeText(this,

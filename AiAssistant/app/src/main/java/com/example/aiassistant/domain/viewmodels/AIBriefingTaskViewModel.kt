@@ -1,14 +1,15 @@
-package com.example.aiassistant
+package com.example.aiassistant.domain.viewmodels
 
 import android.content.Context
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Dispatchers
+import com.example.aiassistant.domain.repository.APIRepository
+import com.example.aiassistant.domain.usecase.ExecuteAITaskUseCase
 import kotlinx.coroutines.launch
 
-class TaskViewModel(private val repo: APIRepository) : ViewModel()
+class AIBriefingTaskViewModel(private val executeAITaskUseCase: ExecuteAITaskUseCase) : ViewModel()
 {
     private val _taskResult = MutableLiveData<String>()
     val taskResult: LiveData<String> = _taskResult
@@ -16,7 +17,7 @@ class TaskViewModel(private val repo: APIRepository) : ViewModel()
     fun executeTask(context: Context) {
         viewModelScope.launch {
             try {
-                val result = repo.fetchBriefing(context)
+                val result = executeAITaskUseCase.invoke(context)
                 _taskResult.value = result
             } catch (e: Exception) {
                 // Handle errors

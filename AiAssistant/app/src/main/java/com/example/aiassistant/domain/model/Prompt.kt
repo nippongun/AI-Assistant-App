@@ -1,4 +1,4 @@
-package com.example.aiassistant
+package com.example.aiassistant.domain.model
 
 data class PromptData(
     val prompts: List<Prompt>

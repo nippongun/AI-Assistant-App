@@ -6,29 +6,61 @@ import android.speech.tts.Voice
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.aallam.openai.api.chat.ChatCompletion
-import com.aallam.openai.api.chat.ChatCompletionRequest
-import com.aallam.openai.api.chat.ChatMessage
-import com.aallam.openai.api.chat.ChatRole
-import com.aallam.openai.api.http.Timeout
-import com.aallam.openai.api.model.ModelId
-import com.aallam.openai.client.OpenAI
-import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.*
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import com.example.aiassistant.domain.repository.APIRepository
+import com.example.aiassistant.domain.viewmodels.AIBriefingTaskViewModel
+import com.example.aiassistant.domain.repository.JSONRepository
+import com.example.aiassistant.domain.usecase.ExecuteAITaskUseCase
+import com.example.aiassistant.domain.viewmodels.AIBriefingTaskViewModelFactory
+import com.example.aiassistant.domain.workers.AIBriefingWorker
+import java.util.Calendar
 import java.util.Locale
-import kotlin.coroutines.CoroutineContext
+import java.util.concurrent.TimeUnit
 
 class TestActivity : AppCompatActivity() {
-    private lateinit var viewModel: TaskViewModel
+    private lateinit var viewModel: AIBriefingTaskViewModel
     private lateinit var resultsText: TextView
     private lateinit var tts: TextToSpeech
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_test)
 
+        val repository = APIRepository()
+        val executeAITaskUseCase = ExecuteAITaskUseCase(repository)
+        val viewModelFactory = AIBriefingTaskViewModelFactory(executeAITaskUseCase)
+
+        viewModel = ViewModelProvider(this, viewModelFactory)[AIBriefingTaskViewModel::class.java]
+
+        initTTS()
+        observeViewModel()
+
+        val fetchBriefingButton: Button = findViewById<Button>(R.id.fetchBriefing)
+        resultsText = findViewById<TextView>(R.id.resultsText)
+        displayPrompts()
+
+        fetchBriefingButton.setOnClickListener {
+            viewModel.executeTask(this)
+        }
+
+        val scheduleDialog = ScheduleDialogFragment.newInstance()
+        scheduleDialog.show(supportFragmentManager, ScheduleDialogFragment.TAG)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        tts.stop()
+        tts.shutdown()
+    }
+
+    private fun initTTS(){
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 prepareTTS()
@@ -36,36 +68,27 @@ class TestActivity : AppCompatActivity() {
                 Log.e("TestActivity", "TTS initialization failed")
             }
         }
+    }
 
-        setContentView(R.layout.activity_test)
-        val fetchBriefingButton: Button = findViewById<Button>(R.id.fetchBriefing)
-        resultsText = findViewById<TextView>(R.id.resultsText)
-        displayPrompts()
+    private fun scheduleAIBriefing(){
 
-        val repo = APIRepository()
-        viewModel = ViewModelProvider(this, object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return TaskViewModel(repo) as T
-            }
-        })[TaskViewModel::class.java]
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
 
+        val dailyWorkRequest = PeriodicWorkRequestBuilder<AIBriefingWorker>(1,TimeUnit.DAYS)
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork("dailyAIBriefing",ExistingPeriodicWorkPolicy.KEEP, dailyWorkRequest)
+
+    }
+
+    private fun observeViewModel(){
         viewModel.taskResult.observe(this) { result ->
             convertTextToSpeech(result)
             updateUI(result)
         }
-
-        fetchBriefingButton.setOnClickListener {
-            viewModel.executeTask(this)
-            //convertTextToSpeech("Hello")
-        }
-
-
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        tts.stop()
-        tts.shutdown()
     }
 
     private fun prepareTTS() {
@@ -104,7 +127,7 @@ class TestActivity : AppCompatActivity() {
     }
 
     private fun displayPrompts(){
-        val text = Utils.getPrompts(this) ?: "Error loading prompts"
+        val text = JSONRepository.getPrompts(this) ?: "Error loading prompts"
         val promptsTextView: TextView = findViewById<TextView>(R.id.promptsTextView)
         promptsTextView.text = text
     }
