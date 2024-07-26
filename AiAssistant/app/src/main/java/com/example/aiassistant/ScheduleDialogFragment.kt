@@ -56,7 +56,8 @@ class ScheduleDialogFragment : DialogFragment() {
                 promptLocation = selectedPrompt.location,
                 promptStocks = selectedPrompt.stocks,
                 promptNews = selectedPrompt.news,
-                promptRhetoric = selectedPrompt.rhetoric
+                promptRhetoric = selectedPrompt.rhetoric,
+                active = true
             )
 
             scheduleManager.saveScheduledTask(scheduledTask)

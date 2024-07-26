@@ -10,5 +10,6 @@ data class ScheduledTask(
     val promptLocation: String,
     val promptStocks: List<String>,
     val promptNews: List<String>,
-    val promptRhetoric: String
+    val promptRhetoric: String,
+    val active: Boolean
 )

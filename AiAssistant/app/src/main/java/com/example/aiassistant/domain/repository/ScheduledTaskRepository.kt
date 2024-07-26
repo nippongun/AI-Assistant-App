@@ -2,11 +2,18 @@ package com.example.aiassistant.domain.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.icu.util.Calendar
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.example.aiassistant.domain.model.ScheduledTask
+import com.example.aiassistant.domain.workers.AIBriefingWorker
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.concurrent.TimeUnit
 
-class ScheduledTaskRepository(context: Context) {
+class ScheduledTaskRepository(private val context: Context) {
     private val sharedPreferences: SharedPreferences = context.getSharedPreferences("SchedulePrefs", Context.MODE_PRIVATE)
 
     fun saveScheduledTask(task: ScheduledTask) {
@@ -62,6 +69,20 @@ class ScheduledTaskRepository(context: Context) {
             put("promptStocks", JSONArray(promptStocks))
             put("promptNews", JSONArray(promptNews))
             put("promptRhetoric", promptRhetoric)
+            put("active", active)
+        }
+    }
+
+    fun toggleTaskActive(taskId: String, active: Boolean) {
+        val task = getScheduledTaskById(taskId)
+        if (task != null) {
+            val updatedTask = task.copy(active = active)
+            updateScheduledTask(updatedTask)
+            if (active) {
+                scheduleTask(updatedTask)
+            } else {
+                cancelScheduledTask(taskId)
+            }
         }
     }
 
@@ -78,7 +99,41 @@ class ScheduledTaskRepository(context: Context) {
             promptNews = List(getJSONArray("promptNews").length()) { i ->
                 getJSONArray("promptNews").getString(i)
             },
-            promptRhetoric = getString("promptRhetoric")
+            promptRhetoric = getString("promptRhetoric"),
+            active = getBoolean("active")
         )
+    }
+
+    fun scheduleTask(task: ScheduledTask){
+        saveScheduledTask(task)
+
+        val currenTime = Calendar.getInstance()
+        val scheduledTime = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, task.hour)
+            set(Calendar.MINUTE, task.minute)
+            set(Calendar.SECOND, 0)
+        }
+
+        if(scheduledTime.before(currenTime)){
+            scheduledTime.add(Calendar.DAY_OF_YEAR,1)
+        }
+
+        val delay = scheduledTime.timeInMillis - currenTime.timeInMillis
+
+        val workRequest = OneTimeWorkRequestBuilder<AIBriefingWorker>()
+            .setInitialDelay(delay, TimeUnit.MILLISECONDS)
+            .setInputData(workDataOf("task" to task.toString()))
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            task.id,
+            ExistingWorkPolicy.REPLACE,
+            workRequest
+        )
+    }
+
+    fun cancelScheduledTask(taskId: String) {
+        WorkManager.getInstance(context).cancelUniqueWork(taskId)
+        //deleteScheduledTask(taskId)
     }
 }

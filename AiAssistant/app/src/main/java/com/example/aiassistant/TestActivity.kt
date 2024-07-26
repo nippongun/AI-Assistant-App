@@ -4,11 +4,17 @@ import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.Voice
 import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
@@ -25,110 +31,49 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 class TestActivity : AppCompatActivity() {
-    private lateinit var viewModel: AIBriefingTaskViewModel
-    private lateinit var resultsText: TextView
-    private lateinit var tts: TextToSpeech
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var adapter: TestAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_test)
 
-        val repository = APIRepository()
-        val executeAITaskUseCase = ExecuteAITaskUseCase(repository)
-        val viewModelFactory = AIBriefingTaskViewModelFactory(executeAITaskUseCase)
+        recyclerView = findViewById(R.id.recyclerView)
+        recyclerView.layoutManager = LinearLayoutManager(this)
 
-        viewModel = ViewModelProvider(this, viewModelFactory)[AIBriefingTaskViewModel::class.java]
+        val testData = List(20) { "Item $it" }
+        adapter = TestAdapter(testData)
+        recyclerView.adapter = adapter
 
-        initTTS()
-        observeViewModel()
-
-        val fetchBriefingButton: Button = findViewById<Button>(R.id.fetchBriefing)
-        resultsText = findViewById<TextView>(R.id.resultsText)
-        displayPrompts()
-
-        fetchBriefingButton.setOnClickListener {
-            viewModel.executeTask(this)
-        }
-
-        val scheduleDialog = ScheduleDialogFragment.newInstance()
-        scheduleDialog.show(supportFragmentManager, ScheduleDialogFragment.TAG)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        tts.stop()
-        tts.shutdown()
-    }
-
-    private fun initTTS(){
-        tts = TextToSpeech(this) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                prepareTTS()
-            } else {
-                Log.e("TestActivity", "TTS initialization failed")
+        recyclerView.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                recyclerView.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                Log.d("MainActivity", "RecyclerView width: ${recyclerView.width}, height: ${recyclerView.height}")
             }
-        }
+        })
+
+        Log.d("TestActivity", "Setup complete. Items: ${testData.size}")
     }
 
-    private fun scheduleAIBriefing(){
-
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-
-        val dailyWorkRequest = PeriodicWorkRequestBuilder<AIBriefingWorker>(1,TimeUnit.DAYS)
-            .setConstraints(constraints)
-            .build()
-
-        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork("dailyAIBriefing",ExistingPeriodicWorkPolicy.KEEP, dailyWorkRequest)
-
-    }
-
-    private fun observeViewModel(){
-        viewModel.taskResult.observe(this) { result ->
-            convertTextToSpeech(result)
-            updateUI(result)
-        }
-    }
-
-    private fun prepareTTS() {
-        if (tts == null) {
-            Log.e("TestActivity", "TTS not initialized")
-            return
+    class TestAdapter(private val items: List<String>) : RecyclerView.Adapter<TestAdapter.ViewHolder>() {
+        class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+            val textView: TextView = view.findViewById(android.R.id.text1)
         }
 
-        val desiredLocale = Locale.US
-        tts.setLanguage(desiredLocale)
-
-        val bestVoice = findBestVoice(tts!!, desiredLocale)
-        if (bestVoice != null) {
-            tts?.voice = bestVoice
-            Log.i("TestActivity", "Selected voice: ${bestVoice.name}")
-        } else {
-            Log.w("TestActivity", "No suitable voice found for locale $desiredLocale")
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val view = LayoutInflater.from(parent.context)
+                .inflate(android.R.layout.simple_list_item_1, parent, false)
+            Log.d("TestAdapter", "onCreateViewHolder called")
+            return ViewHolder(view)
         }
-    }
 
-    private fun findBestVoice(tts: TextToSpeech, desiredLocale: Locale): Voice? {
-        val voices = tts.voices ?: return null
-        return voices.firstOrNull { voice ->
-            voice.locale == desiredLocale && !voice.isNetworkConnectionRequired && !voice.features.contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED)
-        } ?: voices.firstOrNull { voice ->
-            voice.locale.language == desiredLocale.language && !voice.isNetworkConnectionRequired && !voice.features.contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED)
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            holder.textView.text = items[position]
+            Log.d("TestAdapter", "onBindViewHolder called for position $position")
         }
-    }
 
-    private fun convertTextToSpeech(text: String){
-        tts.speak(text, TextToSpeech.QUEUE_FLUSH,null,null)
-    }
-
-    private fun updateUI(result: String){
-        resultsText.text = result
-    }
-
-    private fun displayPrompts(){
-        val text = JSONRepository.getPrompts(this) ?: "Error loading prompts"
-        val promptsTextView: TextView = findViewById<TextView>(R.id.promptsTextView)
-        promptsTextView.text = text
+        override fun getItemCount() = items.size.also {
+            Log.d("TestAdapter", "getItemCount called, returning $it")
+        }
     }
 }
