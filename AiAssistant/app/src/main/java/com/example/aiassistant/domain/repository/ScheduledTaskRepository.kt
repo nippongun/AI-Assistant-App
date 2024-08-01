@@ -107,7 +107,6 @@ class ScheduledTaskRepository(private val context: Context) {
     }
 
     fun scheduleTask(task: ScheduledTask){
-        saveScheduledTask(task)
 
         val currenTime = Calendar.getInstance()
         val scheduledTime = Calendar.getInstance().apply {
@@ -136,6 +135,6 @@ class ScheduledTaskRepository(private val context: Context) {
 
     fun cancelScheduledTask(taskId: String) {
         WorkManager.getInstance(context).cancelUniqueWork(taskId)
-        deleteScheduledTask(taskId)
+        //deleteScheduledTask(taskId)
     }
 }
