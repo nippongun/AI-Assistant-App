@@ -43,9 +43,13 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.testButton).setOnClickListener {
             val scheduleDialog = ScheduleDialogFragment.newInstance()
             scheduleDialog.show(supportFragmentManager, ScheduleDialogFragment.TAG)
+        }
 
-//            val intent = Intent(this, TestActivity::class.java)
-//            startActivity(intent)
+        supportFragmentManager.setFragmentResultListener(ScheduleDialogFragment.REQUEST_KEY, this) { _, bundle ->
+            val taskAdded = bundle.getBoolean(ScheduleDialogFragment.TASK_KEY, false)
+            if (taskAdded) {
+                updateTaskList()
+            }
         }
     }
 

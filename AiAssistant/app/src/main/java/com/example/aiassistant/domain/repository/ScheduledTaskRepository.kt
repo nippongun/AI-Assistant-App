@@ -3,6 +3,7 @@ package com.example.aiassistant.domain.repository
 import android.content.Context
 import android.content.SharedPreferences
 import android.icu.util.Calendar
+import android.util.Log
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -47,6 +48,7 @@ class ScheduledTaskRepository(private val context: Context) {
             tasks[index] = task
             val jsonArray = JSONArray()
             tasks.forEach { jsonArray.put(it.toJson()) }
+            Log.d("ScheduledTaskRepository", tasks.size.toString())
             sharedPreferences.edit().putString("scheduled_tasks", jsonArray.toString()).apply()
         }
     }
@@ -134,6 +136,6 @@ class ScheduledTaskRepository(private val context: Context) {
 
     fun cancelScheduledTask(taskId: String) {
         WorkManager.getInstance(context).cancelUniqueWork(taskId)
-        //deleteScheduledTask(taskId)
+        deleteScheduledTask(taskId)
     }
 }

@@ -10,7 +10,9 @@ import android.widget.Button
 import android.widget.Spinner
 import android.widget.TimePicker
 import android.widget.Toast
+import androidx.core.os.bundleOf
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.setFragmentResult
 import com.example.aiassistant.domain.model.Prompt
 import com.example.aiassistant.domain.model.ScheduledTask
 import com.example.aiassistant.domain.repository.JSONRepository
@@ -23,7 +25,7 @@ class ScheduleDialogFragment : DialogFragment() {
     private lateinit var scheduleManager: ScheduledTaskRepository
     private lateinit var prompts: List<Prompt>
 
-     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_schedule_dialog, container, false)
     }
 
@@ -63,6 +65,7 @@ class ScheduleDialogFragment : DialogFragment() {
             scheduleManager.saveScheduledTask(scheduledTask)
 
             Toast.makeText(context, "Scheduled for $hour:$minute", Toast.LENGTH_SHORT).show()
+            setFragmentResult(REQUEST_KEY, bundleOf(TASK_KEY to true))
             dismiss()
         }
     }
@@ -74,6 +77,9 @@ class ScheduleDialogFragment : DialogFragment() {
 
     companion object {
         const val TAG = "ScheduleDialogFragment"
+        const val REQUEST_KEY = "SCHEDULE_REQUEST"
+        const val TASK_KEY = "TASK"
+
         fun newInstance() = ScheduleDialogFragment()
     }
 
