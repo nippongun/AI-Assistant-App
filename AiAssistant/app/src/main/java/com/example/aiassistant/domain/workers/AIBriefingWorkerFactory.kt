@@ -6,7 +6,7 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.example.aiassistant.domain.usecase.ExecuteAITaskUseCase
 
-class AITaskWorkerFactory(private val executeAITaskUseCase: ExecuteAITaskUseCase) : WorkerFactory() {
+class AIBriefingWorkerFactory(private val executeAITaskUseCase: ExecuteAITaskUseCase) : WorkerFactory() {
     override fun createWorker(
         appContext: Context,
         workerClassName: String,

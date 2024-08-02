@@ -15,10 +15,16 @@ import android.widget.TextView
 import androidx.appcompat.widget.SwitchCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.work.Configuration
+import androidx.work.WorkManager
 import com.example.aiassistant.databinding.ActivityMainBinding
 import com.example.aiassistant.domain.model.ScheduledTask
+import com.example.aiassistant.domain.repository.APIRepository
 import com.example.aiassistant.domain.repository.ScheduledTaskRepository
+import com.example.aiassistant.domain.usecase.ExecuteAITaskUseCase
 import com.example.aiassistant.domain.usecase.ScheduleManager
+import com.example.aiassistant.domain.viewmodels.AIBriefingTaskViewModelFactory
+import com.example.aiassistant.domain.workers.AIBriefingWorkerFactory
 
 class MainActivity : AppCompatActivity() {
 
@@ -26,6 +32,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var scheduleManager: ScheduledTaskRepository
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: ScheduledTaskAdapter
+    private lateinit var executeAITaskUseCase: ExecuteAITaskUseCase
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,6 +40,14 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         scheduleManager = ScheduledTaskRepository(this)
+        val repository = APIRepository()
+        executeAITaskUseCase = ExecuteAITaskUseCase(repository)
+        val myWorkerFactory = AIBriefingWorkerFactory(executeAITaskUseCase)
+        val config = Configuration.Builder()
+            .setWorkerFactory(myWorkerFactory)
+            .build()
+        WorkManager.initialize(this,config)
+
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
         updateTaskList()

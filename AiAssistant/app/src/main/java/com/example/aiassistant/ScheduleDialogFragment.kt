@@ -63,6 +63,7 @@ class ScheduleDialogFragment : DialogFragment() {
             )
 
             scheduleManager.saveScheduledTask(scheduledTask)
+            scheduleManager.scheduleTask(scheduledTask)
 
             Toast.makeText(context, "Scheduled for $hour:$minute", Toast.LENGTH_SHORT).show()
             setFragmentResult(REQUEST_KEY, bundleOf(TASK_KEY to true))

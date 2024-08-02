@@ -3,15 +3,22 @@ package com.example.aiassistant.domain.repository
 import android.content.Context
 import android.content.SharedPreferences
 import android.icu.util.Calendar
+import android.os.Looper
 import android.util.Log
+import android.util.Printer
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import androidx.work.WorkQuery
 import androidx.work.workDataOf
 import com.example.aiassistant.domain.model.ScheduledTask
 import com.example.aiassistant.domain.workers.AIBriefingWorker
 import org.json.JSONArray
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 class ScheduledTaskRepository(private val context: Context) {
@@ -86,6 +93,7 @@ class ScheduledTaskRepository(private val context: Context) {
                 cancelScheduledTask(taskId)
             }
         }
+        debugPrintEnqueuedWorks(context)
     }
 
     private fun JSONObject.toScheduledTask(): ScheduledTask {
@@ -108,18 +116,18 @@ class ScheduledTaskRepository(private val context: Context) {
 
     fun scheduleTask(task: ScheduledTask){
 
-        val currenTime = Calendar.getInstance()
+        val currentTime = Calendar.getInstance()
         val scheduledTime = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, task.hour)
             set(Calendar.MINUTE, task.minute)
             set(Calendar.SECOND, 0)
         }
 
-        if(scheduledTime.before(currenTime)){
+        if(scheduledTime.before(currentTime)){
             scheduledTime.add(Calendar.DAY_OF_YEAR,1)
         }
 
-        val delay = scheduledTime.timeInMillis - currenTime.timeInMillis
+        val delay = scheduledTime.timeInMillis - currentTime.timeInMillis
 
         val workRequest = OneTimeWorkRequestBuilder<AIBriefingWorker>()
             .setInitialDelay(delay, TimeUnit.MILLISECONDS)
@@ -136,5 +144,32 @@ class ScheduledTaskRepository(private val context: Context) {
     fun cancelScheduledTask(taskId: String) {
         WorkManager.getInstance(context).cancelUniqueWork(taskId)
         //deleteScheduledTask(taskId)
+    }
+
+    fun debugPrintEnqueuedWorks(context: Context) {
+        val workManager = WorkManager.getInstance(context)
+
+        val workQuery = WorkQuery.Builder
+            .fromStates(listOf(WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING))
+            .build()
+
+        val workInfos = workManager.getWorkInfos(workQuery).get()
+
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+
+        println("Enqueued and Running Works:")
+        workInfos.forEach { workInfo ->
+            val currentTime = dateFormat.format(Date())
+            val scheduledTime = dateFormat.format(workInfo.nextScheduleTimeMillis)
+            println("Current Time: $currentTime")
+            println("ID: ${workInfo.id}")
+            println("State: ${workInfo.state}")
+            println("Tags: ${workInfo.tags}")
+            println("Run Attempt Count: ${workInfo.runAttemptCount}")
+            println("Next scheduled time: $scheduledTime")
+            println("Periodicity ${workInfo.periodicityInfo}")
+            // Print input data if any
+            println("--------------------")
+        }
     }
 }

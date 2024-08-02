@@ -21,7 +21,7 @@ class AIBriefingWorker(
     private lateinit var tts: TextToSpeech
 
     override suspend fun doWork(): Result = withContext(Dispatchers.Main) {
-
+        Log.d("AIBriefingWorker", "Worker started at ${System.currentTimeMillis()}")
         val context = applicationContext
 
         val ttsInitialized = suspendCancellableCoroutine<Boolean> { continuation ->
