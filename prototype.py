@@ -19,7 +19,7 @@ def generate_all_prompts(file_path):
     prompts_data = load_prompts_from_json(file_path)
     generated_prompts = []
 
-    for prompt_info in prompts_data:
+    for prompt_info in prompts_gidata:
         name = prompt_info.get("name")
         location = prompt_info.get("location")
         news_categories = prompt_info.get("news_categories")

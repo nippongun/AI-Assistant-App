@@ -2,6 +2,7 @@ package com.example.aiassistant.domain.workers
 
 import android.content.Context
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.speech.tts.Voice
 import android.util.Log
 import androidx.work.CoroutineWorker
@@ -42,13 +43,36 @@ class AIBriefingWorker(
 
         try {
             val result = executeAITaskUseCase(context)
-            convertTextToSpeech(result)
-            Result.success()
+            val speechCompleted = convertTextToSpeech(result)
+            if (speechCompleted) {
+                Result.success()
+            } else {
+                Result.retry()
+            }
         } catch (e: Exception) {
             Log.e("AITaskWorker", "Task execution failed", e)
             Result.failure()
         } finally {
             tts.shutdown()
+        }
+    }
+
+    suspend fun convertTextToSpeech(text: String): Boolean {
+        return suspendCancellableCoroutine { continuation ->
+            val utteranceId = "AITaskSpeech"
+            tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                override fun onStart(utteranceId: String) {}
+
+                override fun onDone(utteranceId: String) {
+                    continuation.resume(true)
+                }
+
+                override fun onError(utteranceId: String) {
+                    continuation.resume(false)
+                }
+            })
+
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
         }
     }
 
@@ -82,9 +106,5 @@ class AIBriefingWorker(
                 TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED
             )
         }
-    }
-
-    private fun convertTextToSpeech(text: String) {
-        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
     }
 }
